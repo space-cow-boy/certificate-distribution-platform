@@ -4,11 +4,6 @@
   "installCommand": "npm ci --prefix frontend",
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
-  "functions": {
-    "api/index.py": {
-      "excludeFiles": "{frontend/**,node_modules/**,certificates/**,**/__pycache__/**,**/*.xlsx}"
-    }
-  },
   "routes": [
     { "src": "^/verify$", "dest": "/api/index.py" },
     { "src": "^/certificate$", "dest": "/api/index.py" },
