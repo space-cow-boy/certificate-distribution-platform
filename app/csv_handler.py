@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Iterable
 class CSVHandler:
     """Handle CSV operations for student data"""
     
-    def __init__(self, csv_path: str = "data/students.csv"):
+    def __init__(self, csv_path: str = "students.csv"):
         """
         Initialize CSV handler
         
@@ -26,6 +26,7 @@ class CSVHandler:
             candidate = project_root / candidate
 
         self.csv_path = str(candidate)
+        self._project_root = project_root
 
     @staticmethod
     def _normalize_key(key: str) -> str:
@@ -71,7 +72,17 @@ class CSVHandler:
             FileNotFoundError: If CSV file doesn't exist
         """
         if not os.path.exists(self.csv_path):
-            raise FileNotFoundError(f"CSV file not found: {self.csv_path}")
+            # Backward-compatible fallbacks (older deployments used data/students.csv)
+            fallbacks = [
+                str(self._project_root / "students.csv"),
+                str(self._project_root / "data" / "students.csv"),
+            ]
+            for candidate in fallbacks:
+                if os.path.exists(candidate):
+                    self.csv_path = candidate
+                    break
+            else:
+                raise FileNotFoundError(f"CSV file not found: {self.csv_path}")
         
         students: List[Dict[str, str]] = []
         # Use utf-8-sig to tolerate CSVs saved with a BOM (common with Excel/Forms exports)

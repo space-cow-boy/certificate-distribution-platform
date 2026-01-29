@@ -28,7 +28,7 @@ app = FastAPI(
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
 
-CSV_PATH = os.getenv("CSV_PATH", "data/students.csv")
+CSV_PATH = os.getenv("CSV_PATH", "students.csv")
 CERTIFICATES_DIR = os.getenv("CERTIFICATES_DIR", "certificates")
 TEMPLATE_IMAGE = os.getenv("CERTIFICATE_TEMPLATE_IMAGE", "templates/certificate_template.jpg")
 

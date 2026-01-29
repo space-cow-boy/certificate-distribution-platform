@@ -9,7 +9,7 @@ services:
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: CSV_PATH
-        value: data/students.csv
+        value: students.csv
       - key: CERTIFICATES_DIR
         value: certificates
       - key: CERTIFICATE_TEMPLATE_IMAGE
