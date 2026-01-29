@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "installCommand": "npm ci --include=dev --prefix frontend",
-  "buildCommand": "npm run build --prefix frontend",
+  "buildCommand": "npm ci --include=dev --prefix frontend && npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
   "routes": [
     { "src": "^/verify$", "dest": "/api/index.py" },
