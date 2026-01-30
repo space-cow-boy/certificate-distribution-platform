@@ -16,3 +16,16 @@ services:
         value: templates/certificate_template.jpg
       - key: CERTIFICATE_ID_PREFIX
         value: CERT
+      # Tuning knobs for certificate name rendering (font metrics differ across OS images)
+      - key: CERT_FONT_PATH
+        value: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+      - key: CERT_NAME_FONT_SIZE
+        value: "120"
+      - key: CERT_NAME_Y_OFFSET
+        value: "0"
+      - key: CERT_NAME_Y_RATIO
+        value: "0.52"
+      - key: CERT_NAME_MARGIN_RATIO
+        value: "0.12"
+      - key: CERT_NAME_COLOR
+        value: "#000000"

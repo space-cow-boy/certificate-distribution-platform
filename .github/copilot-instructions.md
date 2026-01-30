@@ -33,6 +33,10 @@
 - Generate template (if missing): `python setup_template.py`
 - Run server: `uvicorn app.main:app --reload` (defaults to port 8000)
 
+## Deployment / env vars
+- Render deploy config lives in [render.yaml](render.yaml) and passes env vars consumed by [app/main.py](app/main.py).
+- Certificate name placement is tunable via env vars read in [app/certificate_generator.py](app/certificate_generator.py): `CERT_NAME_Y_RATIO`, `CERT_NAME_Y_OFFSET`, `CERT_NAME_FONT_SIZE`, `CERT_FONT_PATH`, etc.
+
 ## Project-specific patterns
 - Keep filesystem paths relative to repo root (template path `templates/...`, output `certificates/...`).
 - Certificate PDFs are cached by filename; if behavior changes, delete the corresponding file in `certificates/` to force regeneration.

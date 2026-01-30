@@ -7,6 +7,14 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except Exception:
+    # dotenv is optional on Render; env vars are injected there.
+    pass
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
