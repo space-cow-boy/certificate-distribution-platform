@@ -179,6 +179,29 @@
             font-size: 1.2rem;
         }
 
+        /* Mobile nav tweaks */
+        @media (max-width: 640px) {
+            nav {
+                padding: 1rem 1rem;
+            }
+
+            /* Hide the college + club names on phones; keep logos + portal title */
+            .logo-left span,
+            .logo-right span {
+                display: none;
+            }
+
+            .logo-image {
+                width: 34px;
+                height: 34px;
+                border-radius: 8px;
+            }
+
+            .nav-title {
+                font-size: 1.05rem;
+            }
+        }
+
         .nav-links {
             display: flex;
             gap: 2.5rem;
