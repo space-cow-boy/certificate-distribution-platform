@@ -365,6 +365,43 @@
         .form-page.active {
             display: flex;
         }
+        
+        /* Toggle Styles */
+        .toggle-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            position: absolute;
+            right: 2rem;
+            top: 8rem;
+            z-index: 2;
+        }
+        
+        .toggle-button {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .toggle-button.active {
+            border-color: var(--indigo);
+            background: rgba(79, 70, 229, 0.2);
+            color: white;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.3);
+        }
+        
+        .toggle-button:hover {
+            border-color: var(--indigo);
+            color: white;
+            transform: translateY(-2px);
+        }
 
         .form-container {
             display: grid;
@@ -637,27 +674,61 @@
 
     <!-- Certificate Form Page -->
     <div class="form-page" id="formPage">
+        <div class="toggle-container">
+            <button class="toggle-button active" id="studentToggle" onclick="switchToStudent()">Student</button>
+            <button class="toggle-button" id="managementToggle" onclick="switchToManagement()">Management</button>
+        </div>
+        
         <div class="form-container">
-            <div class="form-card">
-                <h2 class="form-title">Find Your Certificate</h2>
-                <form id="certificateForm">
-                    <div class="form-group">
-                        <input type="text" id="studentName" class="form-input" placeholder="Student Name" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" id="studentId" class="form-input" placeholder="Student ID" required>
-                    </div>
-                    <button type="submit" class="submit-button" id="submitBtn">
-                        Download Certificate
-                    </button>
-                    <div class="loader" id="loader"></div>
-                </form>
-                <div id="message" class="message"></div>
-            </div>
+            <!-- Student Form -->
+            <div id="studentForm" class="student-form">
+                <div class="form-card">
+                    <h2 class="form-title">Find Your Certificate</h2>
+                    <form id="certificateForm">
+                        <div class="form-group">
+                            <input type="text" id="studentName" class="form-input" placeholder="Student Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="studentId" class="form-input" placeholder="Student ID" required>
+                        </div>
+                        <button type="submit" class="submit-button" id="submitBtn">
+                            Download Certificate
+                        </button>
+                        <div class="loader" id="loader"></div>
+                    </form>
+                    <div id="message" class="message"></div>
+                </div>
 
-            <div class="certificate-preview">
-                <div class="preview-card">
-                    <img src="/static/certificate_template.jpg" alt="Certificate template" style="width: 100%; height: auto; display: block; border-radius: 20px;" />
+                <div class="certificate-preview">
+                    <div class="preview-card">
+                        <img src="/static/certificate_template.jpg" alt="Certificate template" style="width: 100%; height: auto; display: block; border-radius: 20px;" />
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Management Form -->
+            <div id="managementForm" class="management-form" style="display: none;">
+                <div class="form-card">
+                    <h2 class="form-title">Management Team Certificate</h2>
+                    <form id="managementCertificateForm">
+                        <div class="form-group">
+                            <input type="text" id="managementName" class="form-input" placeholder="Full Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="managementId" class="form-input" placeholder="Management ID" required>
+                        </div>
+                        <button type="submit" class="submit-button" id="managementSubmitBtn">
+                            Download Certificate
+                        </button>
+                        <div class="loader" id="managementLoader"></div>
+                    </form>
+                    <div id="managementMessage" class="message"></div>
+                </div>
+
+                <div class="certificate-preview">
+                    <div class="preview-card">
+                        <img src="/static/CertificateManagement.jpeg" alt="Management Certificate template" style="width: 100%; height: auto; display: block; border-radius: 20px;" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -668,7 +739,22 @@
             document.getElementById('landingPage').style.display = 'none';
             document.getElementById('formPage').classList.add('active');
         }
+        
+        function switchToStudent() {
+            document.getElementById('studentForm').style.display = '';
+            document.getElementById('managementForm').style.display = 'none';
+            document.getElementById('studentToggle').classList.add('active');
+            document.getElementById('managementToggle').classList.remove('active');
+        }
+        
+        function switchToManagement() {
+            document.getElementById('studentForm').style.display = 'none';
+            document.getElementById('managementForm').style.display = '';
+            document.getElementById('studentToggle').classList.remove('active');
+            document.getElementById('managementToggle').classList.add('active');
+        }
 
+        // Student Form Handler
         const form = document.getElementById('certificateForm');
         const messageDiv = document.getElementById('message');
         const loader = document.getElementById('loader');
@@ -717,6 +803,57 @@
             messageDiv.textContent = text;
             messageDiv.className = `message ${type}`;
             messageDiv.style.display = 'block';
+        }
+        
+        // Management Form Handler
+        const managementForm = document.getElementById('managementCertificateForm');
+        const managementMessageDiv = document.getElementById('managementMessage');
+        const managementLoader = document.getElementById('managementLoader');
+        const managementSubmitBtn = document.getElementById('managementSubmitBtn');
+
+        managementForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const managementName = document.getElementById('managementName').value.trim();
+            const managementId = document.getElementById('managementId').value.trim();
+
+            if (!managementName || !managementId) {
+                showManagementMessage('Please enter both name and management ID', 'error');
+                return;
+            }
+
+            // Show loader
+            managementSubmitBtn.style.display = 'none';
+            managementLoader.style.display = 'block';
+            managementMessageDiv.style.display = 'none';
+
+            try {
+                // Verify management member
+                const verifyResponse = await fetch(`/verify-management?name=${encodeURIComponent(managementName)}&mgmt_id=${encodeURIComponent(managementId)}`);
+
+                if (!verifyResponse.ok) {
+                    throw new Error('Management member not found. Please check your name and ID.');
+                }
+
+                const verifyData = await verifyResponse.json();
+
+                // Download certificate
+                window.location.href = `/certificate-management?name=${encodeURIComponent(managementName)}&mgmt_id=${encodeURIComponent(managementId)}`;
+
+                showManagementMessage(`✓ Certificate found for ${verifyData.name}! Download started...`, 'success');
+
+            } catch (error) {
+                showManagementMessage(error.message, 'error');
+            } finally {
+                managementSubmitBtn.style.display = 'block';
+                managementLoader.style.display = 'none';
+            }
+        });
+
+        function showManagementMessage(text, type) {
+            managementMessageDiv.textContent = text;
+            managementMessageDiv.className = `message ${type}`;
+            managementMessageDiv.style.display = 'block';
         }
     </script>
 </body>

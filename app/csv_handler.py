@@ -12,12 +12,13 @@ from typing import Optional, List, Dict, Iterable
 class CSVHandler:
     """Handle CSV operations for student data"""
     
-    def __init__(self, csv_path: str = "students.csv"):
+    def __init__(self, csv_path: str = "students.csv", management_csv_path: str = "management.csv"):
         """
         Initialize CSV handler
         
         Args:
             csv_path: Path to the CSV file containing student data
+            management_csv_path: Path to the CSV file containing management team data
         """
         project_root = Path(__file__).resolve().parents[1]
         normalized = (csv_path or "").replace("\\", "/")
@@ -26,6 +27,13 @@ class CSVHandler:
             candidate = project_root / candidate
 
         self.csv_path = str(candidate)
+        
+        normalized_mgmt = (management_csv_path or "").replace("\\", "/")
+        candidate_mgmt = Path(normalized_mgmt)
+        if not candidate_mgmt.is_absolute():
+            candidate_mgmt = project_root / candidate_mgmt
+        
+        self.management_csv_path = str(candidate_mgmt)
         self._project_root = project_root
 
     @staticmethod
@@ -59,6 +67,16 @@ class CSVHandler:
             "Email_id": self._get_first(row, ["Email_id", "Email id", "Email", "Email ID", "Email Address"]),
             "Course": self._get_first(row, ["Course", "Program", "Branch"]),
             "Code": self._get_first(row, ["Code", "Workshop", "Event", "Batch"]),
+        }
+    
+    def normalize_management(self, row: Dict[str, str]) -> Dict[str, str]:
+        """Return a canonical management dict regardless of CSV header variations."""
+        return {
+            "Name": self._get_first(row, ["Name", "Full Name"]),
+            "Student_Id": self._get_first(row, ["Student_Id", "Student ID", "StudentId", "Mgmt_Id"]),
+            "Email_id": self._get_first(row, ["Email_id", "Email id", "Email", "Email ID", "Email Address"]),
+            "Course": self._get_first(row, ["Course", "Program", "Branch"]),
+            "Position": self._get_first(row, ["Position", "Title", "Role"]),
         }
         
     def get_all_students(self) -> List[Dict[str, str]]:
@@ -152,4 +170,90 @@ class CSVHandler:
             
         except Exception:
             return False
+    
+    def get_all_management(self) -> List[Dict[str, str]]:
+        """
+        Read all management team members from management CSV file
+        
+        Returns:
+            List of dictionaries containing management data
+            
+        Raises:
+            FileNotFoundError: If management CSV file doesn't exist
+        """
+        if not os.path.exists(self.management_csv_path):
+            raise FileNotFoundError(f"Management CSV file not found: {self.management_csv_path}")
+        
+        management: List[Dict[str, str]] = []
+        with open(self.management_csv_path, 'r', encoding='utf-8-sig', newline='') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                management.append(self.normalize_management(row))
+        
+        return management
+    
+    def find_management_by_name(self, name: str) -> Optional[Dict[str, str]]:
+        """
+        Find a management team member by name
+        
+        Args:
+            name: The person's name to search for
+            
+        Returns:
+            Dictionary containing management data if found, None otherwise
+        """
+        try:
+            management = self.get_all_management()
+        except FileNotFoundError:
+            return None
+        
+        name_normalized = self._normalize_name(name)
+        
+        for person in management:
+            person_name = self._normalize_name(person.get('Name', ''))
+            if person_name == name_normalized:
+                return person
+        
+        return None
+    
+    def find_management_by_name_and_id(self, name: str, mgmt_id: str) -> Optional[Dict[str, str]]:
+        """
+        Find a management team member by name and ID
+        
+        Args:
+            name: The person's name to search for
+            mgmt_id: The management ID to search for
+            
+        Returns:
+            Dictionary containing management data if found, None otherwise
+        """
+        try:
+            management = self.get_all_management()
+        except FileNotFoundError:
+            return None
+        
+        name_normalized = self._normalize_name(name)
+        mgmt_id_normalized = self._normalize_student_id(mgmt_id)
+        
+        for person in management:
+            person_name = self._normalize_name(person.get('Name', ''))
+            person_id = self._normalize_student_id(person.get('Student_Id', ''))
+            
+            if person_name == name_normalized and person_id == mgmt_id_normalized:
+                return person
+        
+        return None
+    
+    def generate_management_certificate_id(self, mgmt_id: str) -> str:
+        """
+        Generate a certificate ID for management from management ID
+        
+        Args:
+            mgmt_id: The management ID
+            
+        Returns:
+            Certificate ID in format CERT-MGMT-{mgmt_id}
+        """
+        prefix = os.getenv("MANAGEMENT_CERT_ID_PREFIX", "CERT-MGMT")
+        return f"{prefix}-{mgmt_id}"
 

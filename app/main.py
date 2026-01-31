@@ -66,10 +66,11 @@ app.add_middleware(
 
 
 # Initialize handlers
-csv_handler = CSVHandler(_as_abs(CSV_PATH))
+csv_handler = CSVHandler(_as_abs(CSV_PATH), management_csv_path=_as_abs("management.csv"))
 cert_generator = CertificateGenerator(
     template_path=_as_abs(TEMPLATE_IMAGE),
     output_dir=_as_abs(CERTIFICATES_DIR),
+    management_template_path=_as_abs("templates/CertificateManagement.jpeg"),
 )
 
 
@@ -217,6 +218,7 @@ async def get_certificate(
             cert_generator.generate_certificate(
                 student_name=student.get("Name"),
                 certificate_id=certificate_id,
+                course=student.get("Course"),
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error generating certificate: {str(e)}")
@@ -267,7 +269,8 @@ async def generate_all_certificates(admin_key: str = Query(..., description="Adm
             # Generate certificate
             cert_generator.generate_certificate(
                 student_name=name,
-                certificate_id=certificate_id
+                certificate_id=certificate_id,
+                course=student.get("Course"),
             )
             generated.append(certificate_id)
         
@@ -284,6 +287,168 @@ async def generate_all_certificates(admin_key: str = Query(..., description="Adm
         raise HTTPException(
             status_code=500,
             detail=f"Error generating certificates: {str(e)}"
+        )
+
+
+@app.get("/verify-management")
+async def verify_management_certificate(name: str, mgmt_id: str) -> Dict[str, Any]:
+    """
+    Verify a management team member and return their information
+    
+    Args:
+        name: The person's name
+        mgmt_id: The management ID
+        
+    Returns:
+        Management member information and validity status
+        
+    Raises:
+        HTTPException: If person not found
+    """
+    try:
+        person = csv_handler.find_management_by_name_and_id(name, mgmt_id)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Management database CSV not available: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error while verifying management member: {str(e)}",
+        )
+    
+    if not person:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Management member not found with name: {name} and ID: {mgmt_id}"
+        )
+    
+    certificate_id = csv_handler.generate_management_certificate_id(person.get("Student_Id"))
+    
+    return {
+        "name": person.get("Name"),
+        "email": person.get("Email_id"),
+        "position": person.get("Position"),
+        "certificate_id": certificate_id,
+        "valid": True
+    }
+
+
+@app.get("/certificate-management")
+async def get_management_certificate(
+    name: str,
+    mgmt_id: str,
+    force: bool = Query(False, description="Regenerate the certificate PDF even if it already exists"),
+):
+    """
+    Generate management certificate if not exists and return as downloadable PDF
+    
+    Args:
+        name: The person's name
+        mgmt_id: The management ID
+        force: Whether to regenerate even if exists
+        
+    Returns:
+        PDF file as download
+        
+    Raises:
+        HTTPException: If person not found in database
+    """
+    # Verify person exists
+    try:
+        person = csv_handler.find_management_by_name_and_id(name, mgmt_id)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Management database CSV not available: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error while looking up management member: {str(e)}",
+        )
+    
+    if not person:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Management member not found with name: {name} and ID: {mgmt_id}"
+        )
+    
+    # Generate certificate ID
+    certificate_id = csv_handler.generate_management_certificate_id(person.get("Student_Id"))
+    
+    # Cache PDFs on disk
+    if force or (not cert_generator.certificate_exists(certificate_id)):
+        try:
+            cert_generator.generate_management_certificate(
+                person_name=person.get("Name"),
+                certificate_id=certificate_id,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error generating management certificate: {str(e)}")
+
+    cert_path = cert_generator.get_certificate_path(certificate_id)
+    return FileResponse(path=cert_path, media_type="application/pdf", filename=f"{certificate_id}.pdf")
+
+
+@app.get("/generate-all-management")
+async def generate_all_management_certificates(admin_key: str = Query(..., description="Admin key for authorization")) -> Dict[str, Any]:
+    """
+    Admin endpoint to generate all management certificates from CSV
+    Protected by admin key
+    
+    Args:
+        admin_key: Admin authorization key
+        
+    Returns:
+        Summary of generated certificates
+        
+    Raises:
+        HTTPException: If admin key is invalid or generation fails
+    """
+    # Verify admin key (only enforced if ADMIN_KEY is set)
+    if ADMIN_KEY and admin_key != ADMIN_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid admin key"
+        )
+    
+    try:
+        management = csv_handler.get_all_management()
+        generated = []
+        skipped = []
+        
+        for person in management:
+            mgmt_id = person.get("Student_Id")
+            name = person.get("Name")
+            certificate_id = csv_handler.generate_management_certificate_id(mgmt_id)
+            
+            # Skip if already exists
+            if cert_generator.certificate_exists(certificate_id):
+                skipped.append(certificate_id)
+                continue
+            
+            # Generate certificate
+            cert_generator.generate_management_certificate(
+                person_name=name,
+                certificate_id=certificate_id
+            )
+            generated.append(certificate_id)
+        
+        return {
+            "success": True,
+            "total_management": len(management),
+            "generated": len(generated),
+            "skipped": len(skipped),
+            "generated_ids": generated,
+            "skipped_ids": skipped
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating management certificates: {str(e)}"
         )
 
 
