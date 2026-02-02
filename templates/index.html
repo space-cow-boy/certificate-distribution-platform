@@ -775,6 +775,33 @@
             document.getElementById('managementToggle').classList.add('active');
         }
 
+        // Auto-detect API base URL for different environments
+        const getApiBaseUrl = () => {
+            const currentHost = window.location.hostname;
+            const currentPort = window.location.port;
+            
+            // Local development: FastAPI on port 8000
+            if ((currentHost === 'localhost' || currentHost === '127.0.0.1') && currentPort === '8000') {
+                return '';  // Use relative paths
+            }
+            
+            // Live Server or other local development (different port)
+            if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+                return 'http://127.0.0.1:8000';
+            }
+            
+            // Production: Render backend (or set via environment variable)
+            if (typeof window.API_BASE !== 'undefined') {
+                return window.API_BASE;  // Can be injected by build process
+            }
+            
+            // For Vercel + Render: replace with your actual Render URL
+            // Format: https://certificate-project.onrender.com (or your actual Render URL)
+            return '';  // Default to same domain for Now (if backend is on same domain)
+        };
+        
+        const API_BASE = getApiBaseUrl();
+        
         // Student Form Handler
         const form = document.getElementById('certificateForm');
         const messageDiv = document.getElementById('message');
@@ -799,7 +826,8 @@
 
             try {
                 // Verify student
-                const verifyResponse = await fetch(`/verify?name=${encodeURIComponent(studentName)}&student_id=${encodeURIComponent(studentId)}`);
+                const verifyUrl = `${API_BASE}/verify?name=${encodeURIComponent(studentName)}&student_id=${encodeURIComponent(studentId)}`;
+                const verifyResponse = await fetch(verifyUrl);
 
                 if (!verifyResponse.ok) {
                     throw new Error('Student not found. Please check your name and student ID.');
@@ -808,7 +836,8 @@
                 const verifyData = await verifyResponse.json();
 
                 // Download certificate
-                window.location.href = `/certificate?name=${encodeURIComponent(studentName)}&student_id=${encodeURIComponent(studentId)}`;
+                const certUrl = `${API_BASE}/certificate?name=${encodeURIComponent(studentName)}&student_id=${encodeURIComponent(studentId)}`;
+                window.location.href = certUrl;
 
                 showMessage(`✓ Certificate found for ${verifyData.name}! Download started...`, 'success');
 
@@ -850,7 +879,8 @@
 
             try {
                 // Verify management member
-                const verifyResponse = await fetch(`/verify-management?name=${encodeURIComponent(managementName)}&mgmt_id=${encodeURIComponent(managementId)}`);
+                const verifyUrl = `${API_BASE}/verify-management?name=${encodeURIComponent(managementName)}&mgmt_id=${encodeURIComponent(managementId)}`;
+                const verifyResponse = await fetch(verifyUrl);
 
                 if (!verifyResponse.ok) {
                     throw new Error('Management member not found. Please check your name and college ID.');
@@ -859,7 +889,8 @@
                 const verifyData = await verifyResponse.json();
 
                 // Download certificate
-                window.location.href = `/certificate-management?name=${encodeURIComponent(managementName)}&mgmt_id=${encodeURIComponent(managementId)}`;
+                const certUrl = `${API_BASE}/certificate-management?name=${encodeURIComponent(managementName)}&mgmt_id=${encodeURIComponent(managementId)}`;
+                window.location.href = certUrl;
 
                 showManagementMessage(`✓ Certificate found for ${verifyData.name}! Download started...`, 'success');
 

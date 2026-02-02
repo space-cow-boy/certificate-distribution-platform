@@ -138,16 +138,26 @@ class CSVHandler:
         
         return None
     
-    def generate_certificate_id(self, student_id: str) -> str:
+    def generate_certificate_id(self, student_id: str, student_name: str = None) -> str:
         """
-        Generate a certificate ID from student ID
+        Generate a certificate ID from student name or ID
         
         Args:
-            student_id: The student's ID
+            student_id: The student's ID (fallback)
+            student_name: The student's name (preferred for filename)
             
         Returns:
-            Certificate ID in format CERT-WORKSHOP1-{student_id}
+            Certificate ID (name-based if available, otherwise ID-based)
         """
+        # Use student name if provided, sanitize it for filename
+        if student_name:
+            # Sanitize name: remove special chars, replace spaces with underscores
+            sanitized_name = "".join(c if c.isalnum() or c == " " else "" for c in student_name)
+            sanitized_name = sanitized_name.strip().replace(" ", "_")
+            if sanitized_name:
+                return sanitized_name
+        
+        # Fallback to ID-based format
         prefix = os.getenv("CERTIFICATE_ID_PREFIX", "CERT")
         return f"{prefix}-{student_id}"
     
@@ -244,16 +254,26 @@ class CSVHandler:
         
         return None
     
-    def generate_management_certificate_id(self, mgmt_id: str) -> str:
+    def generate_management_certificate_id(self, mgmt_id: str, person_name: str = None) -> str:
         """
-        Generate a certificate ID for management from management ID
+        Generate a certificate ID for management from name or ID
         
         Args:
-            mgmt_id: The management ID
+            mgmt_id: The management ID (fallback)
+            person_name: The person's name (preferred)
             
         Returns:
-            Certificate ID in format CERT-MGMT-{mgmt_id}
+            Certificate ID (name-based if available, otherwise ID-based)
         """
+        # Use person name if provided, sanitize it for filename
+        if person_name:
+            # Sanitize name: remove special chars, replace spaces with underscores
+            sanitized_name = "".join(c if c.isalnum() or c == " " else "" for c in person_name)
+            sanitized_name = sanitized_name.strip().replace(" ", "_")
+            if sanitized_name:
+                return sanitized_name
+        
+        # Fallback to ID-based format
         prefix = os.getenv("MANAGEMENT_CERT_ID_PREFIX", "CERT-MGMT")
         return f"{prefix}-{mgmt_id}"
 

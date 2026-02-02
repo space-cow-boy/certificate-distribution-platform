@@ -157,7 +157,7 @@ async def verify_certificate(name: str, student_id: str) -> Dict[str, Any]:
             detail=f"Student not found with name: {name} and ID: {student_id}"
         )
     
-    certificate_id = csv_handler.generate_certificate_id(student.get("Student_Id"))
+    certificate_id = csv_handler.generate_certificate_id(student.get("Student_Id"), student.get("Name"))
     
     return {
         "name": student.get("Name"),
@@ -210,7 +210,7 @@ async def get_certificate(
         )
     
     # Generate certificate ID
-    certificate_id = csv_handler.generate_certificate_id(student.get("Student_Id"))
+    certificate_id = csv_handler.generate_certificate_id(student.get("Student_Id"), student.get("Name"))
     
     # Render/WebService: cache PDFs on disk
     if force or (not cert_generator.certificate_exists(certificate_id)):
@@ -218,7 +218,7 @@ async def get_certificate(
             cert_generator.generate_certificate(
                 student_name=student.get("Name"),
                 certificate_id=certificate_id,
-                course=student.get("Course"),
+                course=None,  # Don't include course in student certificates
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error generating certificate: {str(e)}")
@@ -259,7 +259,7 @@ async def generate_all_certificates(admin_key: str = Query(..., description="Adm
             name = student.get("Name")
             
             # Generate certificate ID
-            certificate_id = csv_handler.generate_certificate_id(student_id)
+            certificate_id = csv_handler.generate_certificate_id(student_id, name)
             
             # Skip if already exists
             if cert_generator.certificate_exists(certificate_id):
@@ -324,7 +324,7 @@ async def verify_management_certificate(name: str, mgmt_id: str) -> Dict[str, An
             detail=f"Management member not found with name: {name} and ID: {mgmt_id}"
         )
     
-    certificate_id = csv_handler.generate_management_certificate_id(person.get("Student_Id"))
+    certificate_id = csv_handler.generate_management_certificate_id(person.get("Student_Id"), person.get("Name"))
     
     return {
         "name": person.get("Name"),
@@ -376,7 +376,7 @@ async def get_management_certificate(
         )
     
     # Generate certificate ID
-    certificate_id = csv_handler.generate_management_certificate_id(person.get("Student_Id"))
+    certificate_id = csv_handler.generate_management_certificate_id(person.get("Student_Id"), person.get("Name"))
     
     # Cache PDFs on disk
     if force or (not cert_generator.certificate_exists(certificate_id)):
@@ -422,7 +422,7 @@ async def generate_all_management_certificates(admin_key: str = Query(..., descr
         for person in management:
             mgmt_id = person.get("Student_Id")
             name = person.get("Name")
-            certificate_id = csv_handler.generate_management_certificate_id(mgmt_id)
+            certificate_id = csv_handler.generate_management_certificate_id(mgmt_id, name)
             
             # Skip if already exists
             if cert_generator.certificate_exists(certificate_id):
